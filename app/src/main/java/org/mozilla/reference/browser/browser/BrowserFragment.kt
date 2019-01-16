@@ -7,6 +7,7 @@ package org.mozilla.reference.browser.browser
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +21,7 @@ import mozilla.components.feature.downloads.DownloadsFeature
 import mozilla.components.feature.prompts.PromptFeature
 import mozilla.components.feature.session.FullScreenFeature
 import mozilla.components.feature.session.SessionFeature
+import mozilla.components.feature.session.bundling.SessionBundleStorage
 import mozilla.components.feature.tabs.toolbar.TabsToolbarFeature
 import mozilla.components.support.ktx.android.content.isPermissionGranted
 import mozilla.components.support.ktx.android.view.enterToImmersiveMode
@@ -27,7 +29,11 @@ import mozilla.components.support.ktx.android.view.exitImmersiveModeIfNeeded
 import org.mozilla.reference.browser.BackHandler
 import org.mozilla.reference.browser.R
 import org.mozilla.reference.browser.ext.requireComponents
+import org.mozilla.reference.browser.sessions.SessionListFragment
+import org.mozilla.reference.browser.sessions.SessionListViewModel
+import org.mozilla.reference.browser.sessions.SnapshotEntity
 import org.mozilla.reference.browser.tabs.TabsTrayFragment
+import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 class BrowserFragment : Fragment(), BackHandler {
@@ -37,6 +43,7 @@ class BrowserFragment : Fragment(), BackHandler {
     private lateinit var awesomeBarFeature: AwesomeBarFeature
     private lateinit var promptsFeature: PromptFeature
     private lateinit var fullScreenFeature: FullScreenFeature
+    private lateinit var sessionListFragment: SessionListFragment
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_browser, container, false)
@@ -46,6 +53,8 @@ class BrowserFragment : Fragment(), BackHandler {
         super.onViewCreated(view, savedInstanceState)
 
         val sessionId = arguments?.getString(SESSION_ID)
+
+        toolbar.hint = "Search or enter address"
 
         sessionFeature = SessionFeature(
                 requireComponents.core.sessionManager,
@@ -111,6 +120,39 @@ class BrowserFragment : Fragment(), BackHandler {
             downloadsFeature,
             promptsFeature,
             fullScreenFeature)
+
+        toolbar.setOnEditFocusChangeListener {  }
+        val storage = SessionBundleStorage(
+                requireActivity().applicationContext,
+                bundleLifetime = Pair(5, TimeUnit.MINUTES))
+
+        storage.bundles()
+
+        val snapshotDatasource = storage.bundlesPaged()
+                .map {
+                    val savedAtField = it.javaClass.getDeclaredField("savedAt")
+                    savedAtField .isAccessible = true
+                    val savedAt = savedAtField.get(it) as Long
+
+                    val idField = it.javaClass.getDeclaredField("id")
+                    idField.isAccessible = true
+                    val id = idField.get(it) as Long
+
+                    val snapshot = it.restoreSnapshot(requireComponents.core.engine) ?: return@map null
+
+                    SnapshotEntity(id, savedAt, snapshot)
+                }
+
+        val sessionListViewModel = SessionListViewModel(snapshotDatasource)
+        sessionListFragment = SessionListFragment.create(sessionListViewModel)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        childFragmentManager.beginTransaction()
+                .replace(session_container.id, sessionListFragment)
+                .commit()
     }
 
     private fun showTabs() {

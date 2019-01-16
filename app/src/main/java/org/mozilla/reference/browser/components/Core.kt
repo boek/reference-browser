@@ -6,6 +6,7 @@ package org.mozilla.reference.browser.components
 
 import android.content.Context
 import android.preference.PreferenceManager
+import androidx.lifecycle.Observer
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.session.SessionManager
 import mozilla.components.browser.session.storage.SessionStorage
@@ -13,6 +14,7 @@ import mozilla.components.browser.storage.sync.PlacesHistoryStorage
 import mozilla.components.concept.engine.DefaultSettings
 import mozilla.components.concept.engine.Engine
 import mozilla.components.feature.session.HistoryDelegate
+import mozilla.components.feature.session.bundling.SessionBundleStorage
 import org.mozilla.reference.browser.AppRequestInterceptor
 import org.mozilla.reference.browser.EngineProvider
 import org.mozilla.reference.browser.ext.getPreferenceKey
@@ -48,18 +50,16 @@ class Core(private val context: Context) {
      * case all sessions/tabs are closed.
      */
     val sessionManager by lazy {
-        val sessionStorage = SessionStorage(context, engine)
+        val storage = SessionBundleStorage(
+                context,
+                bundleLifetime = Pair(0, TimeUnit.SECONDS))
 
         SessionManager(engine, defaultSession = { Session("about:blank") }).apply {
-            sessionStorage.restore()?.let { snapshot -> restore(snapshot) }
+            val bundle = storage.restore()
+            bundle?.restoreSnapshot(engine)?.let { snapshot -> restore(snapshot) }
 
-            if (size == 0) {
-                val initialSession = Session("https://www.mozilla.org")
-                add(initialSession)
-            }
-
-            sessionStorage.autoSave(this)
-                .periodicallyInForeground(interval = 30, unit = TimeUnit.SECONDS)
+            storage.autoSave(this)
+                .periodicallyInForeground(interval = 10, unit = TimeUnit.SECONDS)
                 .whenGoingToBackground()
                 .whenSessionsChange()
         }

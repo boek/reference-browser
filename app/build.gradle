@@ -87,7 +87,7 @@ android.applicationVariants.all { variant ->
 // -------------------------------------------------------------------------------------------------
 // Sentry: Read token from local file if it exists (Only release builds)
 // -------------------------------------------------------------------------------------------------
-    print("Sentry token:  "+ variant.name)
+    print("Sentry token:  " + variant.name)
     try {
         def token = new File("${rootDir}/.sentry_token").text.trim()
         buildConfigField 'String', 'SENTRY_TOKEN', '"' + token + '"'
@@ -110,11 +110,11 @@ android.applicationVariants.all { variant ->
 // Activating telemetry  with command line paramter.
 // -------------------------------------------------------------------------------------------------
 
-if (project.hasProperty("telemetry") && project.property("telemetry") == "true") {
-    buildConfigField 'boolean', 'TELEMETRY_ENABLED', 'true'
-} else {
-    buildConfigField 'boolean', 'TELEMETRY_ENABLED', 'false'
-}
+    if (project.hasProperty("telemetry") && project.property("telemetry") == "true") {
+        buildConfigField 'boolean', 'TELEMETRY_ENABLED', 'true'
+    } else {
+        buildConfigField 'boolean', 'TELEMETRY_ENABLED', 'false'
+    }
 
 // -------------------------------------------------------------------------------------------------
 // Generating version codes for Google Play
@@ -171,6 +171,7 @@ dependencies {
     implementation Deps.mozilla_feature_intent
     implementation Deps.mozilla_feature_search
     implementation Deps.mozilla_feature_session
+    implementation Deps.mozilla_feature_session_bundling
     implementation Deps.mozilla_feature_sync
     implementation Deps.mozilla_feature_toolbar
     implementation Deps.mozilla_feature_tabs
@@ -188,6 +189,7 @@ dependencies {
     implementation Deps.mozilla_lib_crash
     implementation Deps.thirdparty_sentry
 
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0-beta01'
     geckoNightlyImplementation Deps.mozilla_browser_engine_gecko_nightly
     geckoNightlyArmImplementation Gecko.geckoview_nightly_arm
     geckoNightlyX86Implementation Gecko.geckoview_nightly_x86
