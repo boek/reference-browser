@@ -3,12 +3,14 @@ package org.mozilla.reference.browser.sessions
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.constraintlayout.solver.widgets.Snapshot
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations.map
@@ -72,6 +74,7 @@ class SessionListFragment : Fragment(), CoroutineScope {
         get() = job + Dispatchers.Main
 
     private lateinit var viewModel: SessionListViewModel
+    var onSessionSelection: ((SnapshotEntity) -> Unit)? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -81,7 +84,10 @@ class SessionListFragment : Fragment(), CoroutineScope {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sessionsAdapter = SessionsAdapter(requireContext())
+        val sessionsAdapter = SessionsAdapter() {
+            Log.e("Session Tapped!", it.id.toString())
+            onSessionSelection?.invoke(it)
+        }
 
         viewModel.snapshots.observe(this, Observer { snapshots ->
             launch(IO) {
@@ -104,13 +110,23 @@ class SessionListFragment : Fragment(), CoroutineScope {
     }
 }
 
-private class SessionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+private class SessionViewHolder(itemView: View, val onTap: (SnapshotEntity) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
     private val timestamp: TextView = itemView.findViewById(R.id.timestamp)
     private val titles: TextView = itemView.findViewById(R.id.site_titles)
     private val overflow: TextView = itemView.findViewById(R.id.title_overflow)
+    private var item: SnapshotEntity? = null
+
+    init {
+        itemView.setOnClickListener { _ ->
+            val item = this.item ?: return@setOnClickListener
+            onTap(item)
+        }
+    }
 
     fun bind(item: SnapshotEntity) {
+        this.item = item
+
         timestamp.text = item.formattedSavedAt
 
         val urlFormatter: (String) -> String = { url ->
@@ -141,7 +157,7 @@ private class SessionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
         const val LAYOUT_ID = R.layout.session_layout
     }
 }
-private class SessionsAdapter(private val context: Context) :
+private class SessionsAdapter(private val onTap: (SnapshotEntity) -> Unit) :
         RecyclerView.Adapter<SessionViewHolder>() {
     inner class DiffCallback(
             private val oldSnapshots: List<SnapshotEntity>,
@@ -175,7 +191,7 @@ private class SessionsAdapter(private val context: Context) :
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SessionViewHolder {
         return SessionViewHolder(
-                LayoutInflater.from(parent.context).inflate(SessionViewHolder.LAYOUT_ID, parent, false))
+                LayoutInflater.from(parent.context).inflate(SessionViewHolder.LAYOUT_ID, parent, false), onTap)
     }
 
     override fun onBindViewHolder(holder: SessionViewHolder, position: Int) {
