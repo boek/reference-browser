@@ -128,22 +128,23 @@ class BrowserFragment : Fragment(), BackHandler {
 
         storage.bundles()
 
-        val snapshotDatasource = storage.bundlesPaged()
-                .map {
-                    val savedAtField = it.javaClass.getDeclaredField("savedAt")
-                    savedAtField .isAccessible = true
-                    val savedAt = savedAtField.get(it) as Long
+        val snapshots = storage.bundles(40)
+//                .map {
+//                    val savedAtField = it.javaClass.getDeclaredField("savedAt")
+//                    savedAtField .isAccessible = true
+//                    val savedAt = savedAtField.get(it) as Long
+//
+//                    val idField = it.javaClass.getDeclaredField("id")
+//                    idField.isAccessible = true
+//                    val id = idField.get(it) as Long
+//
+//                    val snapshot = it.restoreSnapshot(requireComponents.core.engine) ?: return@map null
+//
+//                    SnapshotEntity(id, savedAt, snapshot)
+//                }
 
-                    val idField = it.javaClass.getDeclaredField("id")
-                    idField.isAccessible = true
-                    val id = idField.get(it) as Long
 
-                    val snapshot = it.restoreSnapshot(requireComponents.core.engine) ?: return@map null
-
-                    SnapshotEntity(id, savedAt, snapshot)
-                }
-
-        val sessionListViewModel = SessionListViewModel(snapshotDatasource)
+        val sessionListViewModel = SessionListViewModel(snapshots, requireComponents.core.engine)
         sessionListFragment = SessionListFragment.create(sessionListViewModel)
     }
 

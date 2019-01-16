@@ -11,22 +11,25 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.Transformations.map
 import androidx.lifecycle.ViewModel
-import androidx.paging.DataSource
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
-import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.fragment_session_list.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import mozilla.components.browser.session.SessionManager
+import mozilla.components.concept.engine.Engine
+import mozilla.components.feature.session.bundling.SessionBundle
 
 import org.mozilla.reference.browser.R
 import java.lang.Exception
 import java.net.URL
 import java.time.*
 import java.time.format.DateTimeFormatter
+import kotlin.coroutines.CoroutineContext
 
 @RequiresApi(Build.VERSION_CODES.O)
 data class SnapshotEntity(val id: Long, val savedAt: Long, val snapshot: SessionManager.Snapshot) {
@@ -45,11 +48,29 @@ data class SnapshotEntity(val id: Long, val savedAt: Long, val snapshot: Session
     }
 }
 
-class SessionListViewModel(snapshotDatasource: DataSource.Factory<Int, SnapshotEntity?>): ViewModel() {
-    val snapshots: LiveData<PagedList<SnapshotEntity?>> = LivePagedListBuilder(snapshotDatasource, /* page size */ 20).build()
+class SessionListViewModel(snapshots: LiveData<List<SessionBundle>>, engine: Engine): ViewModel() {
+    val snapshots: LiveData<List<SnapshotEntity>> = map(snapshots) { bundles ->
+        bundles.mapNotNull { bundle ->
+            val savedAtField = bundle.javaClass.getDeclaredField("savedAt")
+            savedAtField .isAccessible = true
+            val savedAt = savedAtField.get(bundle) as Long
+
+            val idField = bundle.javaClass.getDeclaredField("id")
+            idField.isAccessible = true
+            val id = idField.get(bundle) as Long
+
+            val snapshot = bundle.restoreSnapshot(engine) ?: return@mapNotNull null
+
+            SnapshotEntity(id, savedAt, snapshot)
+        }.sortedByDescending { it.savedAt }
+    }
 }
 
-class SessionListFragment : Fragment() {
+class SessionListFragment : Fragment(), CoroutineScope {
+    private var job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.Main
+
     private lateinit var viewModel: SessionListViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -62,8 +83,12 @@ class SessionListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val sessionsAdapter = SessionsAdapter(requireContext())
 
-        viewModel.snapshots.observe(this, Observer { pagedList ->
-            sessionsAdapter.submitList(pagedList) })
+        viewModel.snapshots.observe(this, Observer { snapshots ->
+            launch(IO) {
+                sessionsAdapter.refresh(snapshots)
+            }
+        })
+//            sessionsAdapter.submitList(pagedList) })
 
         session_list.apply {
             adapter = sessionsAdapter
@@ -117,8 +142,35 @@ private class SessionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
     }
 }
 private class SessionsAdapter(private val context: Context) :
-        PagedListAdapter<SnapshotEntity, SessionViewHolder>(DIFF_CALLBACK) {
+        RecyclerView.Adapter<SessionViewHolder>() {
+    inner class DiffCallback(
+            private val oldSnapshots: List<SnapshotEntity>,
+            private val newSnapshots: List<SnapshotEntity>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldSnapshots.size
+        override fun getNewListSize(): Int = newSnapshots.size
+        override fun areItemsTheSame(p0: Int, p1: Int): Boolean = true
+        override fun areContentsTheSame(p0: Int, p1: Int): Boolean =
+                oldSnapshots[p0].id == newSnapshots[p1].id
+        override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? =
+                newSnapshots[newItemPosition]
+    }
 
+    private var entities: List<SnapshotEntity> = listOf()
+    private var pendingJob: Job? = null
+
+    suspend fun refresh(snapshots: List<SnapshotEntity>) = coroutineScope {
+        pendingJob?.cancel()
+
+        pendingJob = launch(IO) {
+            val result = DiffUtil.calculateDiff(DiffCallback(this@SessionsAdapter.entities, snapshots))
+
+            launch(Main) {
+                result.dispatchUpdatesTo(this@SessionsAdapter)
+                this@SessionsAdapter.entities = snapshots
+            }
+        }
+    }
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SessionViewHolder {
@@ -127,23 +179,9 @@ private class SessionsAdapter(private val context: Context) :
     }
 
     override fun onBindViewHolder(holder: SessionViewHolder, position: Int) {
-        val item = getItem(position)
-
-        if (item == null) { holder.itemView.visibility = View.INVISIBLE; return }
-
-       holder.itemView.visibility = View.VISIBLE
+        val item = entities[position]
         holder.bind(item)
     }
 
-    companion object {
-        private val DIFF_CALLBACK = object :
-                DiffUtil.ItemCallback<SnapshotEntity>() {
-
-            override fun areItemsTheSame(oldSnapshot: SnapshotEntity,
-                                         newSnapshot: SnapshotEntity): Boolean = oldSnapshot.id == newSnapshot.id
-
-            override fun areContentsTheSame(oldSnapshot:SnapshotEntity,
-                                            newSnapshot: SnapshotEntity): Boolean = oldSnapshot.id == newSnapshot.id
-        }
-    }
+    override fun getItemCount(): Int = entities.size
 }
