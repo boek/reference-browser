@@ -14,7 +14,7 @@
         android:fontFamily="sans-serif-black"
         android:padding="8dp"
         android:text="TIMESTAMP"
-        android:textColor="@color/photonGrey90"
+        android:textColor="@color/photonGrey20"
         android:textSize="17sp" />
 
     <TextView
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:text="TITLES"
-        android:textColor="@color/photonGrey80"
+        android:textColor="@color/photonGrey30"
         android:textSize="12sp" />
 
     <TextView
@@ -32,6 +32,6 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:text="EXTRAS"
-        android:textColor="@color/photonGrey80"
+        android:textColor="@color/photonGrey30"
         android:textSize="8sp" />
 </LinearLayout>
