@@ -12,6 +12,7 @@ import com.google.android.material.snackbar.Snackbar.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import android.util.AttributeSet
 import android.view.View
+import mozilla.components.browser.session.Session
 import mozilla.components.browser.tabstray.BrowserTabsTray
 import mozilla.components.concept.engine.EngineView
 import mozilla.components.concept.tabstray.TabsTray
@@ -24,6 +25,9 @@ import org.mozilla.reference.browser.browser.BrowserFragment
 import org.mozilla.reference.browser.browser.CrashIntegration
 import org.mozilla.reference.browser.ext.components
 import org.mozilla.reference.browser.ext.isCrashReportActive
+import org.mozilla.reference.browser.sessions.SessionListFragment
+import org.mozilla.reference.browser.sessions.SessionListFragment.InteractionEvent
+import org.mozilla.reference.browser.sessions.SessionListViewModel
 import org.mozilla.reference.browser.telemetry.DataReportingNotification
 
 open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
@@ -35,11 +39,7 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
         setContentView(R.layout.activity_main)
 
         if (savedInstanceState == null) {
-            val sessionId = SafeIntent(intent).getStringExtra(IntentProcessor.ACTIVE_SESSION_ID)
-            supportFragmentManager?.beginTransaction()?.apply {
-                replace(R.id.container, BrowserFragment.create(sessionId))
-                commit()
-            }
+            presentSessionList()
         }
 
         if (isCrashReportActive) {
@@ -78,5 +78,43 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
             .setAction(crash_report_non_fatal_action) { _ ->
                 crashIntegration.sendCrashReport(crash)
             }.show()
+    }
+
+    private fun presentSessionList() {
+        val snapshots = components.core.storage.bundles(40)
+        val sessionListViewModel = SessionListViewModel(snapshots, components.core.engine)
+
+        val sessionListFragment = SessionListFragment.create(sessionListViewModel)
+        sessionListFragment.onInteractionEvent = {
+            components.core.sessionManager.removeAll()
+            when (it) {
+                is InteractionEvent.Search -> {
+                    components.core.sessionManager.add(Session("about:blank"))
+                    val fragment = presentBrowser()
+                    fragment.presentSearch()
+                }
+                is InteractionEvent.Session -> {
+                    components.core.sessionManager.restore(it.snapshot.snapshot)
+                    presentBrowser()
+                }
+            }
+        }
+
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, sessionListFragment)
+            commit()
+        }
+    }
+
+    private fun presentBrowser(): BrowserFragment {
+        val sessionId = SafeIntent(intent).getStringExtra(IntentProcessor.ACTIVE_SESSION_ID)
+        val fragment = BrowserFragment.create(sessionId)
+        supportFragmentManager?.beginTransaction()?.apply {
+            replace(R.id.container, fragment)
+            addToBackStack(null)
+            commit()
+        }
+
+        return fragment
     }
 }

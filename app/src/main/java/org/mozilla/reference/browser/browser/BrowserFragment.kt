@@ -43,7 +43,7 @@ class BrowserFragment : Fragment(), BackHandler {
     private lateinit var awesomeBarFeature: AwesomeBarFeature
     private lateinit var promptsFeature: PromptFeature
     private lateinit var fullScreenFeature: FullScreenFeature
-    private lateinit var sessionListFragment: SessionListFragment
+    private var presentSearch = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_browser, container, false)
@@ -121,27 +121,11 @@ class BrowserFragment : Fragment(), BackHandler {
             promptsFeature,
             fullScreenFeature)
 
-        toolbar.setOnEditFocusChangeListener {  }
-        val storage = SessionBundleStorage(
-                requireActivity().applicationContext,
-                bundleLifetime = Pair(5, TimeUnit.MINUTES))
-
-        val snapshots = storage.bundles(40)
-        val sessionListViewModel = SessionListViewModel(snapshots, requireComponents.core.engine)
-        sessionListFragment = SessionListFragment.create(sessionListViewModel)
-        sessionListFragment.onSessionSelection = {
-            requireComponents.core.sessionManager.removeAll()
-            requireComponents.core.sessionManager.restore(it.snapshot)
-            session_container.visibility = View.GONE
+        if (presentSearch) {
+            presentSearch = false
+            toolbar.url = ""
+            toolbar.editMode()
         }
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-
-        childFragmentManager.beginTransaction()
-                .replace(session_container.id, sessionListFragment)
-                .commit()
     }
 
     private fun showTabs() {
@@ -151,6 +135,10 @@ class BrowserFragment : Fragment(), BackHandler {
             replace(R.id.container, TabsTrayFragment())
             commit()
         }
+    }
+
+    fun presentSearch() {
+        presentSearch = true
     }
 
     private fun fullScreenChanged(enabled: Boolean) {

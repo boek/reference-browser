@@ -43,9 +43,9 @@ class Core(private val context: Context) {
         EngineProvider.getEngine(context, defaultSettings)
     }
 
-    val storage = SessionBundleStorage(
+    val storage by lazy { SessionBundleStorage(
             context,
-            bundleLifetime = Pair(0, TimeUnit.SECONDS))
+            bundleLifetime = Pair(0, TimeUnit.SECONDS)) }
 
     /**
      * The session manager component provides access to a centralized registry of

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.constraintlayout.solver.widgets.Snapshot
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations.map
@@ -68,12 +69,17 @@ class SessionListViewModel(snapshots: LiveData<List<SessionBundle>>, engine: Eng
 }
 
 class SessionListFragment : Fragment(), CoroutineScope {
+    sealed class InteractionEvent {
+        object Search: InteractionEvent()
+        data class Session(val snapshot: SnapshotEntity): InteractionEvent()
+    }
+
     private var job = Job()
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.Main
 
     private lateinit var viewModel: SessionListViewModel
-    var onSessionSelection: ((SnapshotEntity) -> Unit)? = null
+    var onInteractionEvent: ((InteractionEvent) -> Unit)? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -85,7 +91,11 @@ class SessionListFragment : Fragment(), CoroutineScope {
         super.onViewCreated(view, savedInstanceState)
         val sessionsAdapter = SessionsAdapter() {
             Log.e("Session Tapped!", it.id.toString())
-            onSessionSelection?.invoke(it)
+            onInteractionEvent?.invoke(InteractionEvent.Session(it))
+        }
+
+        toolbar.setOnClickListener { _ ->
+            onInteractionEvent?.invoke(InteractionEvent.Search)
         }
 
         viewModel.snapshots.observe(this, Observer { snapshots ->
