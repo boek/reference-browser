@@ -1,6 +1,6 @@
 package org.mozilla.reference.browser.sessions
 
-import android.content.Context
+
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
-import androidx.constraintlayout.solver.widgets.Snapshot
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations.map

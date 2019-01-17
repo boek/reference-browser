@@ -43,6 +43,10 @@ class Core(private val context: Context) {
         EngineProvider.getEngine(context, defaultSettings)
     }
 
+    val storage = SessionBundleStorage(
+            context,
+            bundleLifetime = Pair(0, TimeUnit.SECONDS))
+
     /**
      * The session manager component provides access to a centralized registry of
      * all browser sessions (i.e. tabs). It is initialized here to persist and restore
@@ -50,11 +54,7 @@ class Core(private val context: Context) {
      * case all sessions/tabs are closed.
      */
     val sessionManager by lazy {
-        val storage = SessionBundleStorage(
-                context,
-                bundleLifetime = Pair(0, TimeUnit.SECONDS))
-
-        SessionManager(engine, defaultSession = { Session("about:blank") }).apply {
+        SessionManager(engine).apply {
             val bundle = storage.restore()
             bundle?.restoreSnapshot(engine)?.let { snapshot -> restore(snapshot) }
 
