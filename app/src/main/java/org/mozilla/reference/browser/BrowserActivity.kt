@@ -114,18 +114,12 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
 
     fun archiveSession() {
         components.core.storage.save(components.core.sessionManager.createSnapshot()!!)
+        endSession()
+    }
+
+    fun endSession() {
         components.core.sessionManager.removeAll()
-        val snapshots = components.core.storage.bundles(40)
-
-        snapshots.observe(this, Observer {
-            sessionsViewModel.updateData(it)
-        })
-
-        val manager = supportFragmentManager
-        if (manager.backStackEntryCount > 0) {
-            val first = manager.getBackStackEntryAt(0)
-            manager.popBackStack(first.id, FragmentManager.POP_BACK_STACK_INCLUSIVE)
-        }
+        presentSessionList()
     }
 
     private fun presentBrowser(): BrowserFragment {
@@ -133,7 +127,6 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
         val fragment = BrowserFragment.create(sessionId)
         supportFragmentManager?.beginTransaction()?.apply {
             replace(R.id.container, fragment)
-            addToBackStack("browser")
             commit()
         }
 

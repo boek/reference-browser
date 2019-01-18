@@ -46,7 +46,7 @@ data class SnapshotEntity(val id: Long, val savedAt: Long, val snapshot: Session
         when (date) {
             todayDate -> "Today @ ${timeFormatter.format(dateTime)}"
             yesterdayDate -> "Yesterday @ ${timeFormatter.format(dateTime)}"
-            else -> "${dateTime.dayOfWeek} ${dateTime.monthValue}/${dateTime.dayOfMonth} @ ${timeFormatter.format(dateTime)}"
+            else -> "${dateTime.dayOfWeek.toString().capitalize()} ${dateTime.monthValue}/${dateTime.dayOfMonth} @ ${timeFormatter.format(dateTime)}"
         }
     }
 }

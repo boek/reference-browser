@@ -27,6 +27,7 @@ import mozilla.components.support.ktx.android.content.isPermissionGranted
 import mozilla.components.support.ktx.android.view.enterToImmersiveMode
 import mozilla.components.support.ktx.android.view.exitImmersiveModeIfNeeded
 import org.mozilla.reference.browser.BackHandler
+import org.mozilla.reference.browser.BrowserActivity
 import org.mozilla.reference.browser.R
 import org.mozilla.reference.browser.ext.requireComponents
 import org.mozilla.reference.browser.sessions.SessionListFragment
@@ -165,7 +166,8 @@ class BrowserFragment : Fragment(), BackHandler {
             return true
         }
 
-        return false
+        (activity as BrowserActivity).endSession()
+        return true
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
