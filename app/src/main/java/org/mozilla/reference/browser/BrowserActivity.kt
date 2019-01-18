@@ -6,6 +6,7 @@ package org.mozilla.reference.browser
 
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.snackbar.Snackbar.LENGTH_LONG
@@ -90,6 +91,9 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
     }
 
     private fun presentSessionList() {
+        window.statusBarColor = resources.getColor(R.color.home_bg)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+
         val sessionListFragment = SessionListFragment.create(sessionsViewModel)
         sessionListFragment.onInteractionEvent = {
             components.core.sessionManager.removeAll()
@@ -123,6 +127,9 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
     }
 
     private fun presentBrowser(): BrowserFragment {
+        window.statusBarColor = resources.getColor(R.color.primary)
+        window.decorView.systemUiVisibility = 0
+
         val sessionId = SafeIntent(intent).getStringExtra(IntentProcessor.ACTIVE_SESSION_ID)
         val fragment = BrowserFragment.create(sessionId)
         supportFragmentManager?.beginTransaction()?.apply {

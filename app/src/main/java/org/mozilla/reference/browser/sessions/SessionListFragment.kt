@@ -106,6 +106,9 @@ class SessionListFragment : Fragment(), CoroutineScope {
         }
 
         viewModel.snapshotEntities.observe(this, Observer { snapshots ->
+            session_list.visibility = if (!snapshots.isEmpty()) { View.VISIBLE } else { View.GONE }
+            no_sessions.visibility = if (snapshots.isEmpty()) { View.VISIBLE } else { View.GONE }
+
             launch(IO) {
                 sessionsAdapter.refresh(snapshots)
             }

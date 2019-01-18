@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/photonWhite"/>
-
-    <stroke android:width="1dp"
-        android:color="@color/photonGrey30"/>
+    <solid android:color="@color/no_session_bg"/>
 
     <padding android:left="2dp"
         android:top="2dp"

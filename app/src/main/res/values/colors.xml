@@ -5,6 +5,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <color name="placeholder_grey">#777777</color>
 
+    <color name="home_bg">#fdfdfe</color>
+
+
+    <color name="no_session_bg">#1A665BFD</color>
+    <color name="no_session_fg">#665BFD</color>
+
     <color name="primaryDark">#ff333333</color>
     <color name="primary">#ff333333</color>
 
