@@ -56,6 +56,10 @@ class BrowserFragment : Fragment(), BackHandler {
         val sessionId = arguments?.getString(SESSION_ID)
 
         toolbar.hint = "Search or enter address"
+        requireComponents.toolbar.onClearAllSession = {
+            requireComponents.core.storage.removeAll()
+            (activity as BrowserActivity).endSession()
+        }
 
         sessionFeature = SessionFeature(
                 requireComponents.core.sessionManager,

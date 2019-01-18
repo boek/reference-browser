@@ -13,8 +13,10 @@ import mozilla.components.browser.menu.item.BrowserMenuSwitch
 import mozilla.components.browser.menu.item.SimpleBrowserMenuItem
 import mozilla.components.browser.session.SessionManager
 import mozilla.components.feature.session.SessionUseCases
+import mozilla.components.feature.session.bundling.SessionBundleStorage
 import mozilla.components.feature.tabs.TabsUseCases
 import org.mozilla.reference.browser.R
+import org.mozilla.reference.browser.ext.application
 import org.mozilla.reference.browser.ext.share
 import org.mozilla.reference.browser.settings.SettingsActivity
 
@@ -25,9 +27,11 @@ class Toolbar(
     private val context: Context,
     private val sessionUseCases: SessionUseCases,
     private val tabsUseCases: TabsUseCases,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val storage: SessionBundleStorage
 ) {
 
+    var onClearAllSession: (() -> Unit)? = null
     /**
      * Helper class for building browser menus.
      */
@@ -86,6 +90,10 @@ class Toolbar(
             SimpleBrowserMenuItem("Report issue") {
                 tabsUseCases.addTab.invoke(
                     "https://github.com/mozilla-mobile/reference-browser/issues/new")
+            },
+
+            SimpleBrowserMenuItem("Clear all sessions") {
+                onClearAllSession?.invoke()
             },
 
             SimpleBrowserMenuItem("Settings") {

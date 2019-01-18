@@ -21,7 +21,7 @@ class Components(private val context: Context) {
     val search by lazy { Search(context) }
     val useCases by lazy { UseCases(context, core.sessionManager, search.searchEngineManager) }
     val services by lazy { Services(context, useCases.tabsUseCases, core.historyStorage) }
-    val toolbar by lazy { Toolbar(context, useCases.sessionUseCases, useCases.tabsUseCases, core.sessionManager) }
+    val toolbar by lazy { Toolbar(context, useCases.sessionUseCases, useCases.tabsUseCases, core.sessionManager, core.storage) }
     val analytics by lazy { Analytics(context) }
     val utils by lazy { Utilities(core.sessionManager, useCases.sessionUseCases, useCases.searchUseCases) }
 }
