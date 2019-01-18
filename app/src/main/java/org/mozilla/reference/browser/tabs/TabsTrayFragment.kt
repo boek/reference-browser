@@ -9,10 +9,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import kotlinx.android.synthetic.main.fragment_tabstray.tabsPanel
-import kotlinx.android.synthetic.main.fragment_tabstray.tabsTray
+import kotlinx.android.synthetic.main.fragment_tabstray.*
 import mozilla.components.feature.tabs.tabstray.TabsFeature
 import org.mozilla.reference.browser.BackHandler
+import org.mozilla.reference.browser.BrowserActivity
 import org.mozilla.reference.browser.R
 import org.mozilla.reference.browser.browser.BrowserFragment
 import org.mozilla.reference.browser.ext.requireComponents
@@ -36,6 +36,10 @@ class TabsTrayFragment : Fragment(), BackHandler {
             ::closeTabsTray)
 
         tabsPanel.initialize(tabsFeature) { closeTabsTray() }
+
+        save_session.setOnClickListener { _ ->
+            (requireActivity() as BrowserActivity).archiveSession()
+        }
     }
 
     override fun onStart() {

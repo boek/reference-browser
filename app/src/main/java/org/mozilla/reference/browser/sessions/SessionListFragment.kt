@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.constraintlayout.solver.widgets.Snapshot
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations.map
 import androidx.lifecycle.ViewModel
@@ -50,8 +51,10 @@ data class SnapshotEntity(val id: Long, val savedAt: Long, val snapshot: Session
     }
 }
 
-class SessionListViewModel(snapshots: LiveData<List<SessionBundle>>, engine: Engine): ViewModel() {
-    val snapshots: LiveData<List<SnapshotEntity>> = map(snapshots) { bundles ->
+class SessionListViewModel(engine: Engine): ViewModel() {
+    private var sessionBundles = MutableLiveData<List<SessionBundle>>()
+
+    val snapshotEntities: LiveData<List<SnapshotEntity>> = map(sessionBundles) { bundles ->
         bundles.mapNotNull { bundle ->
             val savedAtField = bundle.javaClass.getDeclaredField("savedAt")
             savedAtField .isAccessible = true
@@ -65,6 +68,10 @@ class SessionListViewModel(snapshots: LiveData<List<SessionBundle>>, engine: Eng
 
             SnapshotEntity(id, savedAt, snapshot)
         }.sortedByDescending { it.savedAt }
+    }
+
+    fun updateData(bundles: List<SessionBundle>) {
+        sessionBundles.value = bundles
     }
 }
 
@@ -98,7 +105,7 @@ class SessionListFragment : Fragment(), CoroutineScope {
             onInteractionEvent?.invoke(InteractionEvent.Search)
         }
 
-        viewModel.snapshots.observe(this, Observer { snapshots ->
+        viewModel.snapshotEntities.observe(this, Observer { snapshots ->
             launch(IO) {
                 sessionsAdapter.refresh(snapshots)
             }
@@ -156,7 +163,7 @@ private class SessionViewHolder(itemView: View, val onTap: (SnapshotEntity) -> U
         overflow.text = when(extras.count()) {
             0 -> ""
             1 -> "1 more site"
-            else -> "+#{extras.count} more sites..."
+            else -> "+${extras.size} more sites..."
         }
 
     }

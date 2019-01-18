@@ -12,6 +12,8 @@ import com.google.android.material.snackbar.Snackbar.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import android.util.AttributeSet
 import android.view.View
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Observer
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.tabstray.BrowserTabsTray
 import mozilla.components.concept.engine.EngineView
@@ -19,8 +21,7 @@ import mozilla.components.concept.tabstray.TabsTray
 import mozilla.components.feature.intent.IntentProcessor
 import mozilla.components.lib.crash.Crash
 import mozilla.components.support.utils.SafeIntent
-import org.mozilla.reference.browser.R.string.crash_report_non_fatal_action
-import org.mozilla.reference.browser.R.string.crash_report_non_fatal_message
+import org.mozilla.reference.browser.R.string.*
 import org.mozilla.reference.browser.browser.BrowserFragment
 import org.mozilla.reference.browser.browser.CrashIntegration
 import org.mozilla.reference.browser.ext.components
@@ -33,10 +34,18 @@ import org.mozilla.reference.browser.telemetry.DataReportingNotification
 open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
 
     private lateinit var crashIntegration: CrashIntegration
+    private lateinit var sessionsViewModel: SessionListViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        sessionsViewModel = SessionListViewModel(components.core.engine)
+        val snapshots = components.core.storage.bundles(40)
+
+        snapshots.observe(this, Observer {
+            sessionsViewModel.updateData(it)
+        })
 
         if (savedInstanceState == null) {
             presentSessionList()
@@ -81,10 +90,7 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
     }
 
     private fun presentSessionList() {
-        val snapshots = components.core.storage.bundles(40)
-        val sessionListViewModel = SessionListViewModel(snapshots, components.core.engine)
-
-        val sessionListFragment = SessionListFragment.create(sessionListViewModel)
+        val sessionListFragment = SessionListFragment.create(sessionsViewModel)
         sessionListFragment.onInteractionEvent = {
             components.core.sessionManager.removeAll()
             when (it) {
@@ -106,12 +112,28 @@ open class BrowserActivity : AppCompatActivity(), ComponentCallbacks2 {
         }
     }
 
+    fun archiveSession() {
+        components.core.storage.save(components.core.sessionManager.createSnapshot()!!)
+        components.core.sessionManager.removeAll()
+        val snapshots = components.core.storage.bundles(40)
+
+        snapshots.observe(this, Observer {
+            sessionsViewModel.updateData(it)
+        })
+
+        val manager = supportFragmentManager
+        if (manager.backStackEntryCount > 0) {
+            val first = manager.getBackStackEntryAt(0)
+            manager.popBackStack(first.id, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        }
+    }
+
     private fun presentBrowser(): BrowserFragment {
         val sessionId = SafeIntent(intent).getStringExtra(IntentProcessor.ACTIVE_SESSION_ID)
         val fragment = BrowserFragment.create(sessionId)
         supportFragmentManager?.beginTransaction()?.apply {
             replace(R.id.container, fragment)
-            addToBackStack(null)
+            addToBackStack("browser")
             commit()
         }
 
