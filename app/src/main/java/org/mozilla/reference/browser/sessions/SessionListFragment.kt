@@ -1,7 +1,5 @@
 package org.mozilla.reference.browser.sessions
 
-
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -9,8 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.RequiresApi
-import androidx.constraintlayout.solver.widgets.Snapshot
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
@@ -30,24 +26,46 @@ import mozilla.components.feature.session.bundling.SessionBundle
 import org.mozilla.reference.browser.R
 import java.lang.Exception
 import java.net.URL
-import java.time.*
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
-@RequiresApi(Build.VERSION_CODES.O)
 data class SnapshotEntity(val id: Long, val savedAt: Long, val snapshot: SessionManager.Snapshot) {
     val formattedSavedAt by lazy {
-        val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
-        val dateTime = Instant.ofEpochMilli(savedAt).atZone(ZoneId.systemDefault()).toLocalDateTime()
-        val date = dateTime.toLocalDate()
-        val todayDate = LocalDate.now()
-        val yesterdayDate = todayDate.minusDays(1)
+        val isSameDay: (Calendar, Calendar) -> Boolean = { a, b ->
+            a.get(Calendar.ERA) == b.get(Calendar.ERA) &&
+                    a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
+                    a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
 
-        when (date) {
-            todayDate -> "Today @ ${timeFormatter.format(dateTime)}"
-            yesterdayDate -> "Yesterday @ ${timeFormatter.format(dateTime)}"
-            else -> "${dateTime.dayOfWeek.toString().capitalize()} ${dateTime.monthValue}/${dateTime.dayOfMonth} @ ${timeFormatter.format(dateTime)}"
         }
+
+        val parse: (Date) -> String = { date ->
+            val dateCal = Calendar.getInstance().apply { time = date }
+            val today = Calendar.getInstance()
+            val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+
+            val time = time.format(date)
+            val month = month.format(date)
+            val day = day.format(date)
+            val dayOfWeek = dayOfWeek.format(date)
+
+
+            when {
+                isSameDay(dateCal, today) -> "Today @ $time"
+                isSameDay(dateCal, yesterday) -> "Yesterday @ $time"
+                else -> "$dayOfWeek $month/$day @ $time"
+            }
+        }
+
+
+       parse(Date(savedAt))
+    }
+
+    private companion object {
+        val time = SimpleDateFormat("h:mm a", Locale.US)
+        val month = SimpleDateFormat("M", Locale.US)
+        val day = SimpleDateFormat("d", Locale.US)
+        val dayOfWeek = SimpleDateFormat("EEEE", Locale.US)
     }
 }
 
