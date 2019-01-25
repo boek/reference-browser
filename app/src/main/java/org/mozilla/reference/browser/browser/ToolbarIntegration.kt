@@ -18,7 +18,6 @@ import org.mozilla.reference.browser.ext.components
 class ToolbarIntegration(
     context: Context,
     toolbar: BrowserToolbar,
-    historyStorage: HistoryStorage,
     domainAutocompleteProvider: DomainAutocompleteProvider,
     sessionId: String? = null
 ) : LifecycleObserver {
@@ -26,7 +25,6 @@ class ToolbarIntegration(
         toolbar.setMenuBuilder(context.components.toolbar.menuBuilder)
 
         ToolbarAutocompleteFeature(toolbar).apply {
-            addHistoryStorageProvider(historyStorage)
             addDomainProvider(domainAutocompleteProvider)
         }
     }

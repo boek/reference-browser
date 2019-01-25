@@ -70,7 +70,6 @@ class BrowserFragment : Fragment(), BackHandler {
         lifecycle.addObserver(ToolbarIntegration(
             requireContext(),
             toolbar,
-            requireComponents.core.historyStorage,
             requireComponents.toolbar.shippedDomainsProvider,
             sessionId))
 
