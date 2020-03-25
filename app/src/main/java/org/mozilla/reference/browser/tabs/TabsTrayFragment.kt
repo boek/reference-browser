@@ -56,6 +56,7 @@ class TabsTrayFragment : Fragment(), UserInteractionHandler, TabLayout.BaseOnTab
             },
             ::closeTabsTray)
 
+
         tabsPanel.initialize(
                 tabsFeature,
                 { closeTabsTray() },

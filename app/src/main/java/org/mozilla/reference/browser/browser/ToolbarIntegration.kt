@@ -128,7 +128,8 @@ class ToolbarIntegration(
     init {
         toolbar.display.indicators = listOf(
             DisplayToolbar.Indicators.SECURITY,
-            DisplayToolbar.Indicators.TRACKING_PROTECTION
+            DisplayToolbar.Indicators.TRACKING_PROTECTION,
+            DisplayToolbar.Indicators.CONTAINER
         )
         toolbar.display.displayIndicatorSeparator = true
         toolbar.display.menuBuilder = menuBuilder
