@@ -5,12 +5,13 @@
 package org.mozilla.reference.browser.tabs
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import kotlinx.android.synthetic.main.fragment_tabstray.tabsPanel
-import kotlinx.android.synthetic.main.fragment_tabstray.tabsTray
+import com.google.android.material.tabs.TabLayout
+import kotlinx.android.synthetic.main.fragment_tabstray.*
 import mozilla.components.feature.tabs.tabstray.TabsFeature
 import mozilla.components.support.base.feature.UserInteractionHandler
 import org.mozilla.reference.browser.R
@@ -20,7 +21,7 @@ import org.mozilla.reference.browser.ext.requireComponents
 /**
  * A fragment for displaying the tabs tray.
  */
-class TabsTrayFragment : Fragment(), UserInteractionHandler {
+class TabsTrayFragment : Fragment(), UserInteractionHandler, TabLayout.BaseOnTabSelectedListener<TabLayout.Tab> {
     private var tabsFeature: TabsFeature? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -28,6 +29,8 @@ class TabsTrayFragment : Fragment(), UserInteractionHandler {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        tabLayout.addOnTabSelectedListener(this)
 
         tabsFeature = TabsFeature(
             tabsTray,
@@ -61,5 +64,17 @@ class TabsTrayFragment : Fragment(), UserInteractionHandler {
             replace(R.id.container, BrowserFragment.create())
             commit()
         }
+    }
+
+    override fun onTabReselected(tab: TabLayout.Tab?) {
+
+    }
+
+    override fun onTabUnselected(tab: TabLayout.Tab?) {
+
+    }
+
+    override fun onTabSelected(tab: TabLayout.Tab?) {
+        Log.e("Test", "$tab.yrc")
     }
 }
