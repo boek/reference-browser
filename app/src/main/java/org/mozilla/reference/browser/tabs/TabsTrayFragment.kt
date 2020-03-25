@@ -10,6 +10,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
+import androidx.core.view.get
 import com.google.android.material.tabs.TabLayout
 import kotlinx.android.synthetic.main.fragment_tabstray.*
 import mozilla.components.feature.tabs.tabstray.TabsFeature
@@ -17,12 +19,14 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import org.mozilla.reference.browser.R
 import org.mozilla.reference.browser.browser.BrowserFragment
 import org.mozilla.reference.browser.ext.requireComponents
+import org.mozilla.reference.browser.components.Container
 
 /**
  * A fragment for displaying the tabs tray.
  */
 class TabsTrayFragment : Fragment(), UserInteractionHandler, TabLayout.BaseOnTabSelectedListener<TabLayout.Tab> {
     private var tabsFeature: TabsFeature? = null
+    private var containers = Container.default()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         inflater.inflate(R.layout.fragment_tabstray, container, false)
@@ -30,16 +34,33 @@ class TabsTrayFragment : Fragment(), UserInteractionHandler, TabLayout.BaseOnTab
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        containers.forEach {
+            val icon = resources.getDrawable(it.icon, null)
+            icon.setTint(ContextCompat.getColor(requireContext(), it.color))
+            tabLayout.addTab(
+                    tabLayout.newTab()
+                            .setIcon(icon)
+                            .setTag(it)
+            )
+        }
+
         tabLayout.addOnTabSelectedListener(this)
 
         tabsFeature = TabsFeature(
             tabsTray,
             requireComponents.core.store,
             requireComponents.useCases.tabsUseCases,
-            { !it.content.private },
+            {
+                val container = containers[tabLayout.selectedTabPosition]
+                it.contextId == container.name
+            },
             ::closeTabsTray)
 
-        tabsPanel.initialize(tabsFeature) { closeTabsTray() }
+        tabsPanel.initialize(
+                tabsFeature,
+                { closeTabsTray() },
+                { containers[tabLayout.selectedTabPosition] }
+        )
     }
 
     override fun onStart() {
@@ -75,6 +96,9 @@ class TabsTrayFragment : Fragment(), UserInteractionHandler, TabLayout.BaseOnTab
     }
 
     override fun onTabSelected(tab: TabLayout.Tab?) {
-        Log.e("Test", "$tab.yrc")
+        tabsFeature?.filterTabs {
+            val container = tab?.tag as Container
+            it.contextId == container.name
+        }
     }
 }

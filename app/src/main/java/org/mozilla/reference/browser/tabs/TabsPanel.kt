@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import mozilla.components.feature.tabs.tabstray.TabsFeature
 import mozilla.components.ui.colors.R.color.photonPurple50
 import org.mozilla.reference.browser.R
+import org.mozilla.reference.browser.components.Container
 import org.mozilla.reference.browser.ext.components
 import org.mozilla.reference.browser.view.ToggleImageButton
 
@@ -29,6 +30,7 @@ class TabsPanel @JvmOverloads constructor(
     private var tabsFeature: TabsFeature? = null
     private var isPrivateTray = false
     private var closeTabsTray: (() -> Unit)? = null
+    private var getSelectedContainer: (() -> Container)? = null
 
     init {
         navigationContentDescription = "back"
@@ -41,9 +43,10 @@ class TabsPanel @JvmOverloads constructor(
             val tabsUseCases = components.useCases.tabsUseCases
             when (it.itemId) {
                 R.id.newTab -> {
+                    val container = getSelectedContainer?.invoke()
                     when (isPrivateTray) {
                         true -> tabsUseCases.addPrivateTab.invoke("about:privatebrowsing", selectTab = true)
-                        false -> tabsUseCases.addTab.invoke("about:blank", selectTab = true)
+                        false -> tabsUseCases.addTab.invoke("about:blank", selectTab = true, contextId = container?.name)
                     }
                     closeTabsTray?.invoke()
                 }
@@ -80,8 +83,8 @@ class TabsPanel @JvmOverloads constructor(
             }
         }
 
-        addView(button)
-        addView(privateButton)
+//        addView(button)
+//        addView(privateButton)
     }
 
     private fun updateToggleStates(ours: ToggleImageButton, theirs: ToggleImageButton, isPrivate: Boolean) {
@@ -108,9 +111,10 @@ class TabsPanel @JvmOverloads constructor(
         }
     }
 
-    fun initialize(tabsFeature: TabsFeature?, closeTabsTray: () -> Unit) {
+    fun initialize(tabsFeature: TabsFeature?, closeTabsTray: () -> Unit, getSelectedContainer: () -> Container) {
         this.tabsFeature = tabsFeature
         this.closeTabsTray = closeTabsTray
+        this.getSelectedContainer = getSelectedContainer
     }
 
     private fun Resources.getThemedDrawable(@DrawableRes resId: Int) = getDrawable(resId, context.theme)
